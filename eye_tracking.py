@@ -49,6 +49,7 @@ def analyse_blink(close_eyes):
 
     return False
 
+""""
 def logging(people_id, frame_id, frame_path):
     frame = cv2.imread(frame_path)
     frame, landmarks = detector.findEyeLandmark(frame)
@@ -83,8 +84,17 @@ def logging(people_id, frame_id, frame_path):
         print(analyse_blink(close_eye_frame))
     return EAR_score
 
+"""           
+def logging  (frame_path):
+    frame = cv2.imread(frame_path)
+    frame, landmarks = detector.findEyeLandmark(frame)
 
-                
+    if landmarks is None or 'left_eye_landmarks' not in landmarks or 'right_eye_landmarks' not in landmarks:
+        raise ValueError("Landmarks not found")
+
+    eye_EAR = EAR_calc(landmarks)
+    return eye_EAR
+
 
 
 
