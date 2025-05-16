@@ -1,5 +1,9 @@
 import cv2
 import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.manifold import TSNE
+from sklearn.metrics import confusion_matrix
+import numpy as np
 
 def log_visualize(logs):
     
@@ -35,3 +39,39 @@ def frame_visualize(frame, landmarks):
     cv2.imshow("Facial Landmarks", frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+''' 
+def plot_tsne(X_test, y_pred):
+    tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+    X_tsne = tsne.fit_transform(X_test)
+
+    plt.figure(figsize=(8, 6))
+    palette = sns.color_palette("hsv", len(np.unique(y_pred)))
+
+    for i, label in enumerate(np.unique(y_pred)):
+        idx = (y_pred == label)
+        plt.scatter(X_tsne[idx, 0], X_tsne[idx, 1], label=f"Pred: {label}", alpha=0.7)
+
+    plt.legend()
+    plt.title("t-SNE visualization of predictions")
+    plt.xlabel("Component 1")
+    plt.ylabel("Component 2")
+    plt.grid(True)
+    plt.show()
+    
+'''
+def plot_confusion_matrix(y_test, y_pred):
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.title("Confusion Matrix")
+    plt.show()
+    
+
+def plot_correlation_matrix(df, features, title="Feature Correlation Matrix"):
+    plt.figure(figsize=(8, 6))
+    corr_matrix = df[features].corr()
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+    plt.title(title)
+    plt.show()

@@ -1,3 +1,149 @@
+from sarima_features import extract_all_features
+from visualize import plot_correlation_matrix
+import pandas as pd
+
+# Bước 1: Trích xuất đặc trưng từ video
+df_features = extract_all_features(video_dir="C:\\Users\\Admin\\Downloads\\code\\datasets\\train\\train\\videos",
+                                   label_path="C:\\Users\\Admin\\Downloads\\code\\datasets\\train\\train\\label.csv",
+                                   max_videos=600)
+
+selected_features = ["ResidualMean", "AIC", "ResidualStd", "ResidualVar", "BIC"]
+plot_correlation_matrix(df_features, selected_features)
+
+# Lưu feature để models.py dùng
+df_features.to_csv("data/features/features.csv", index=False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,6 +154,7 @@ from tqdm import tqdm
 from eye_tracking import logging
 import seaborn as sns
 from sklearn.model_selection import train_test_split
+from sklearn.manifold import TSNE
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -75,9 +222,37 @@ for video_name in tqdm(video_files):
 #     pickle.dump((X, y), f)
 
 
+
+def select_best_sarima_params(ear_seq, s=90):
+    best_aic = float("inf")
+    best_order = None
+    best_seasonal_order = None
+
+    for p in range(2):
+        for d in range(2):
+            for q in range(2):
+                for P in range(2):
+                    for D in range(2):
+                        for Q in range(2):
+                            try:
+                                order = (p, d, q)
+                                seasonal_order = (P, D, Q, s)
+                                model = SARIMAX(ear_seq, order=order, seasonal_order=seasonal_order,
+                                                enforce_stationarity=False, enforce_invertibility=False)
+                                results = model.fit(disp=False)
+                                if results.aic < best_aic:
+                                    best_aic = results.aic
+                                    best_order = order
+                                    best_seasonal_order = seasonal_order
+                            except:
+                                continue
+    return best_order, best_seasonal_order
+
 def extract_sarima_features(ear_seq):
     try:
-        model = SARIMAX(ear_seq, order=(1, 0, 1), seasonal_order=(1, 0, 1, 10))
+        order, seasonal_order = select_best_sarima_params(ear_seq, s=10)
+        model = SARIMAX(ear_seq, order=order, seasonal_order=seasonal_order,
+                        enforce_stationarity=False, enforce_invertibility=False)
         model_fit = model.fit(disp=False)
         residuals = model_fit.resid
         return [
@@ -87,7 +262,8 @@ def extract_sarima_features(ear_seq):
             np.mean(residuals),
             np.std(residuals)
         ]
-    except:
+    except Exception as e:
+        print(f"[!] SARIMA failed on sequence: {e}")
         return [np.nan] * 5
 
 features = []
@@ -112,6 +288,10 @@ scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
+# Áp dụng t-SNE lên dữ liệu đã scale
+tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+X_tsne = tsne.fit_transform(X_test)
+
 clf = SVC()
 clf.fit(X_train, y_train)
 
@@ -128,6 +308,23 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.title("Confusion Matrix")
+plt.show()
+
+
+
+# Vẽ scatter plot phân biệt theo nhãn dự đoán
+plt.figure(figsize=(8, 6))
+palette = sns.color_palette("hsv", len(np.unique(y_pred)))
+
+for i, label in enumerate(np.unique(y_pred)):
+    idx = (y_pred == label)
+    plt.scatter(X_tsne[idx, 0], X_tsne[idx, 1], label=f"Predicted: {label}", alpha=0.7, s=60)
+
+plt.title("t-SNE visualization of SVM predictions")
+plt.xlabel("t-SNE Component 1")
+plt.ylabel("t-SNE Component 2")
+plt.legend()
+plt.grid(True)
 plt.show()
 
 
@@ -164,11 +361,6 @@ plt.show()
 
 
 
-
-
-
-
-"""
 from facial_landmark import FacialLandmark
 import cv2
 from utils import EAR
@@ -186,6 +378,6 @@ if image is None:
 else:
     # Use FaceMesh to find facial landmarks
     image, landmarks = detector.findEyeLandmark(image)
-"""
+'''
 
 
